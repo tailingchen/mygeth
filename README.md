@@ -2,7 +2,7 @@
 
 ## Build geth image
 ```
-$ docker build -t geth:latest .
+$ docker build -t geth:latest go-ethereum
 ```
 ## Genesis for private chain
 ```
