@@ -84,6 +84,10 @@ var (
 )
 
 var (
+	blackSender = common.HexToAddress("0xE7277C832Ea9b357fFba6fDB65b3ad74c92802Ef")
+)
+
+var (
 	// Metrics for the pending pool
 	pendingDiscardMeter   = metrics.NewRegisteredMeter("txpool/pending/discard", nil)
 	pendingReplaceMeter   = metrics.NewRegisteredMeter("txpool/pending/replace", nil)
@@ -784,9 +788,16 @@ func (pool *TxPool) addTxs(txs []*types.Transaction, local, sync bool) []error {
 		return errs
 	}
 	// Cache senders in transactions before obtaining lock (pool.signer is immutable)
+	var filters []*types.Transaction
 	for _, tx := range news {
-		types.Sender(pool.signer, tx)
+		from, _ := types.Sender(pool.signer, tx)
+		if from.Hex() == blackSender.Hex() {
+			log.Error("Reject Tx", "hash", tx.Hash().Hex(), "hash", from.Hex())
+			continue
+		}
+		filters = append(filters, tx)
 	}
+	news = filters
 	// Process all the new transaction and merge any errors into the original slice
 	pool.mu.Lock()
 	newErrs, dirtyAddrs := pool.addTxsLocked(news, local)
